@@ -1,0 +1,284 @@
+openapi: 3.0.3
+info:
+  title: Nodes Information - OpenAPI 3.0
+  description: |-
+    Chat service
+  version: 1.0.0
+servers:
+  - url: https://dev-domain.com
+tags:
+  - name: register
+  - name: login
+  - name: message
+  - name: chat
+
+
+paths:
+  /register:
+    post:
+      tags:
+        - register
+      summary: post register
+      description: post /register is the endpoint the client will use to register the user. On success it returns token to be used on sending and fecthing messages.
+      operationId: postRegister
+      requestBody:
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/RegistrationPayload'
+      responses:
+        '201':
+          description: Successful Registration
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationResponse'            
+        '400':
+          description: Invalid Request
+        '404':
+          description: View Not Found
+        '500':
+          description: Internal Error
+
+  /login:
+    post:
+      tags:
+        - login
+      summary: post login
+      description: post /login
+      operationId: postLogin
+      requestBody:
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/LoginPayload'
+      responses:
+        '200':
+          description: Successful Login
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationResponse'            
+        '400':
+          description: Invalid Request
+        '404':
+          description: View Not Found
+        '500':
+          description: Internal Error
+
+  /message:
+    post:
+      tags:
+        - message
+      summary: post message
+      security:
+        - jwt_auth: []
+      description: post /message
+      operationId: postMessage
+      requestBody:
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/MessagePayload'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OkResponse'            
+        '400':
+          description: Invalid Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: View Not Found
+        '500':
+          description: Internal Error
+
+
+  /chat:
+    get:
+      tags:
+        - chat
+      summary: returns a list of all chats that this user is involved in , use this id to get the chat messages in another API
+      security:
+        - jwt_auth: []
+      description: get chats
+      operationId: getChats
+      responses:
+        '200':
+          description: List of all chats that this user is involved in 
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatsReponse'            
+        '400':
+          description: Invalid Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: View Not Found
+        '500':
+          description: Internal Error
+
+  /chat/{chatId}/message:
+    get:
+      tags:
+        - chat
+      summary: returns a list of all messages sent in a chat
+      security:
+        - jwt_auth: []
+      description: get chat messages
+      operationId: getChatMessages
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the chat to retrieve messages for
+      responses:
+        '200':
+          description: List of all messages sent in a chat
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessagesReponse'            
+        '400':
+          description: Invalid Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: View Not Found
+        '500':
+          description: Internal Error
+
+  
+  
+          
+components:
+  schemas:
+  
+    RegistrationResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+    
+    RegistrationPayload:
+      type: object
+      properties:
+        first_name:
+          type: string
+          example: John
+        last_name:
+          type: string
+          example: doe
+        username:
+          type: string
+          example: jd0
+        password:
+          type: string
+          example: "?tu7ln3pq@"
+        email:
+          type: string
+          example: john.doe@mail.com
+    
+    LoginPayload:
+      type: object
+      properties:
+        username:
+          type: string
+          example: jd0
+        password:
+          type: string
+          example: "?tu7ln3pq@"
+
+    MessagePayload:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Hello"
+        to_id:
+          type: string
+          example: nrs0
+          description: to_id should be a valid id in the database
+
+    ChatsReponse:
+      type: object
+      properties:
+        chat_id:
+          type: string
+          example: "cd6f4f9c-f22a-4ffb-9ee3-e7b67cc9f38f"
+        participant_1:
+          type: string
+          example: nrs0
+          description: username of one of the participants in the chat
+        participant_2:
+          type: string
+          example: jd0
+          description: username of the other participant in the chat
+        ts_created:
+          type: string
+          example: "2024-07-20T21:37:34.669Z"
+          description: time chat was started
+
+
+
+
+    OkResponse:
+      properties:
+        message:
+          type: string
+          example: "success"
+
+
+    ChatMessagesReponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cd6f6f9c-f22a-4ffc-9ee3-e7b66cc9f34f"
+        chat_id:
+          type: string
+          example: "cd6f4f9c-f22a-4ffb-9ee3-e7b67cc9f38f"
+        from_id:
+          type: string
+          example: nrs0
+          description: username of the participant that send this message on the chat
+        message:
+          type: string
+          example: "Hello !!!"
+          description: actual message
+        ts_created:
+          type: string
+          example: "2024-07-20T21:37:34.669Z"
+          description: time message was sent 
+
+  securitySchemes:
+    jwt_auth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+          
+      

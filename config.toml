@@ -1,0 +1,11 @@
+[Application]
+Port = 8099
+
+[Database]
+Host = "localhost"
+KeySpace = "authentication"
+
+
+[Redis]
+Host = "localhost"
+Port = 6379
