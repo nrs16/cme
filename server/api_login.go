@@ -4,15 +4,20 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"nrs16/cme/metrics"
 	"nrs16/cme/middleware"
 	"nrs16/cme/requests"
 	"nrs16/cme/responses"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
 
 func (app *App) Login(w http.ResponseWriter, r *http.Request) {
+	metrics.HttpRequestsTotal.WithLabelValues(r.URL.Path).Inc()
+	t := prometheus.NewTimer(metrics.HttpRequestDuration.WithLabelValues(r.URL.Path))
+	defer t.ObserveDuration()
 	var payload requests.LoginBody
 
 	/// read body

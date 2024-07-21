@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    networks:
+      - chatting
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      timeout: 10s
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - chatting
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+      start_period: 20s
+      timeout: 5s
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - chatting    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/metrics"]
+      interval: 10s
+      retries: 5
+      start_period: 20s
+      timeout: 5s
+    
+  app:
+    image: nrs16/chat:latest
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    container_name: chat_system
+    ports:
+      - "8099:8099"
+    networks:
+      - chatting
+
+
+networks:
+  chatting:

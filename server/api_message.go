@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"nrs16/cme/metrics"
 	"nrs16/cme/middleware"
 	"nrs16/cme/repository/entities"
 	"nrs16/cme/requests"
@@ -12,10 +13,14 @@ import (
 
 	"github.com/gocql/gocql"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
 
 func (app *App) SendMessage(w http.ResponseWriter, r *http.Request) {
+	metrics.HttpRequestsTotal.WithLabelValues(r.URL.Path).Inc()
+	t := prometheus.NewTimer(metrics.HttpRequestDuration.WithLabelValues(r.URL.Path))
+	defer t.ObserveDuration()
 	ctx := r.Context()
 	c := ctx.Value("claims").(middleware.Claims)
 	username := c.Username
@@ -153,6 +158,9 @@ func (app *App) SendMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) GetChatMessages(w http.ResponseWriter, r *http.Request) {
+	metrics.HttpRequestsTotal.WithLabelValues(r.URL.Path).Inc()
+	t := prometheus.NewTimer(metrics.HttpRequestDuration.WithLabelValues(r.URL.Path))
+	defer t.ObserveDuration()
 
 	ctx := r.Context()
 	c := ctx.Value("claims").(middleware.Claims)

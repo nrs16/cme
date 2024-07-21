@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'chat system'
+    static_configs:
+      - targets: ['chat_system:8099']

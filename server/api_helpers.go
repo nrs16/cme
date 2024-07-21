@@ -97,3 +97,66 @@ func IsParticipant(username string, chat *entities.Chat) bool {
 	}
 	return false
 }
+
+func AddUsernameToCache(ctx context.Context, redisCon *redis.Client, user string) error {
+
+	//// we keep track if user chats in cache we they are faster to access on the get /request
+	users := make([]string, 0)
+
+	result, err := redisCon.Get(ctx, "users").Result()
+	if err != nil && err != redis.Nil {
+		log.Errorf("error reading chat from redis: %s", err.Error())
+		return err
+	}
+	if err == nil { //skip the below if not found, nothing to unmarshal
+		err = json.Unmarshal([]byte(result), &users)
+		if err != nil {
+			log.Errorf("error unmarshaling: %s", err.Error())
+			return err
+		}
+	}
+
+	users = append(users, user)
+	usersJSON, err := json.Marshal(users)
+	if err != nil {
+		log.Errorf("error marshaling chats: %v", err)
+		return err
+	}
+	status := redisCon.Set(ctx, "users", usersJSON, 0)
+	if status.Err() != nil {
+		log.Errorf("error caching one to one chat: %s", status.Err())
+		return status.Err()
+
+	}
+	return nil
+}
+
+func GetUsersFromCache(ctx context.Context, redisCon *redis.Client) ([]string, error) {
+	users := make([]string, 0)
+
+	usernames, err := redisCon.Get(ctx, "users").Result()
+
+	if err != nil {
+		if err == redis.Nil {
+			return users, nil
+		}
+		log.Errorf("error check chat: %s", err.Error())
+		return users, err
+	}
+	err = json.Unmarshal([]byte(usernames), &users)
+	if err != nil {
+		log.Errorf("invalid error unmarshaling: %s", err.Error())
+		return users, err
+	}
+
+	return users, nil
+}
+
+func UsernameAllowed(username string, usernames []string) bool {
+	for _, u := range usernames {
+		if u == username {
+			return false
+		}
+	}
+	return true
+}

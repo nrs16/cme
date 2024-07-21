@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"nrs16/cme/config"
+	"nrs16/cme/metrics"
 	"nrs16/cme/server"
 
 	"os"
@@ -26,9 +27,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not load configs: %s", err.Error())
 	}
-	///// get information database and insert in redis:
+	/////TODO Later:  get information database and insert in redis:
+
+	////initialize DB:
+	server.InitializeDatabase(config)
 
 	////initialise app with router and DB
+	metrics.InitializePrometheus()
 	app, err := server.InitialiseApp(config)
 	if err != nil {
 		log.Fatalf("could not build app: %s", err.Error())

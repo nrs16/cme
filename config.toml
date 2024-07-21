@@ -2,10 +2,10 @@
 Port = 8099
 
 [Database]
-Host = "localhost"
+Host = "cassandra"
 KeySpace = "authentication"
 
 
 [Redis]
-Host = "localhost"
+Host = "redis"
 Port = 6379

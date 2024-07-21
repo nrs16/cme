@@ -1,45 +1,94 @@
 # Coding Challenge task
 
 ## Some Disclaimers
-- I assumed that messaging should be done among users registered on the platform, and for the sake of this assingment I did one to one chat only
+- jwt encryption key is harcoded in code, this should be moved and read from secret file.
+- I assumed that messaging should be done among users registered on the platform, and for the sake of this assingment I did one to one chat only fully
 - I did not put any restrictions on password , for the sake of ease of use
-- The Database schema on some of the code are meant to do beyond the scope of the assumptions above, they can ce extended for group chatting, but this is not fully done. So if you see something that is not fullt needed or used, it's for this reason, disregard it
-- I did some quick documention in ```/api_specs/api_specs.yaml```, I suggest you copy those into 3.0 swaager editor and use them as reference
+- The Database schema on some of the code are meant to do beyond the scope of the assumptions above, they can be extended for group chatting.
+- API documention is in ```/api_specs/api_specs.yaml```, I suggest you copy those into 3.0 swagger editor and use them as reference
+- register 2 users so you can send message from one to the other
+- database initialization should be improved, and migrations should be implemented, but I did the simplest thing for the task
+- database and redis persistance volumes can be added
+- for sake of task no authentication done on redis and cassandra
+
+## Deployment
+### Docker compose
+
+- clone the **master** branch
+- go to project directory
+- run ```docker-compose up``` Note that this will take a couple of minutes to pull the images, if you have connectivity issues, open the docker-compose file and pull each individually the run ```docker-compose up``` again
+
+### system run
+
+if you want to run project locally ,you also need to have cassandra and redis running:
+- clone the **master** branch
+- change config hosts for redis and cassandra to "localhost"
+- make
+- ./main
 
 
-
-## How to get and run the code
-### Through github
-
-- clone the project using ```git clone https://github.com/nrs16/echo-challenge.git```
-- run the command ```go mod download```
-- run the command ```go run main.go```
-- use this curl to test the code: 
+- Service should be good to go on port 8099: you can use the below curl to test 
+also refer to documentation in ```/api_apecs/api_specs.yaml```
 
 ```
-curl --location 'http://localhost:8080/routes' \
---header 'x-correlation-id: jweygfjkegdf' \
+curl --location 'http://localhost:8099/api/v1/register' \
+--data-raw '{
+    "username":"jh0",
+    "password":"Testing@123",
+    "first_name":"John",
+    "last_name":"Doe",
+    "email_address":"johndoe@mail.comm"
+}
+'
+```
+
+```
+curl --location 'http://localhost:8099/api/v1/message' \
+--header 'Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im5yczEifQ.slPVn9nJOtUER8Eoevcr2ueuLqmloomLkBKtcPcYv_A' \
 --header 'Content-Type: application/json' \
---data '[["LAX","DXB"],["JFK","LAX"], ["SFO","SJC"], ["DXB","SFO"]]'
-
+--data '{
+    "to_id": "nrs16",
+    "message": "Holaaaa nrs1666666"
+}'
 ```
-You can remove x-correlation-id and Content-Type headers but you must send the body
 
 
-### Through docker
+## Architercture
+### Database
+refer to ```schema.sql``` for full schema
+- **user** : this will contain user information and used to authenticate,includes password salt and hash, I kept as simple as possible for now
+- **chat** table: for one on one chats: id, participant_1, participant_2, ts_created
+- **group_chat**: table for group chats (the API for this is not implemented fully on API level): id, participants, ts_created
+- **message** table: id, chat_id, from_id, message, ts_created
+    message is linked to chat, and contains the sender username.
 
-- get the image using ```git pull nrs16/echoserver```
-this might take a while to download because it has golang:1.21 image as base
 
-- run the image inside a container using ```docker run -p 8000:8080 --name routes nrs16/echoserver```
-    - Note that you can change port 8000 to whichever port you want on your machine.
-    - To run the container in the background add -d to the commad so ```docker run -d -p 8000:8080 --name routes nrs16/echoserver```
-- use the below curl to test the code:
-```
-curl --location 'http://localhost:8000/routes' \
---header 'x-correlation-id: jweygfjkegdf' \
---header 'Content-Type: application/json' \
---data '[["LAX","DXB"],["JFK","LAX"], ["SFO","SJC"], ["DXB","SFO"]]'
+### API
 
-```
-You can remove x-correlation-id and Content-Type headers but you must send the body
+- first you need to register by providing your info, username and password, this will return a token that you can use to send to retrieve message. I checked cached usernames from redis, to make sure of uniqueness
+- you can also login, this will also return a token to be used on message sending an retrieval
+- to send a message the user should:
+    -  send recipient username in payload  
+    ```
+        {
+            "to_id": "nrs16",
+            "message": "Holaaaa nrs1666666"
+        }
+    ```
+    OR
+    - send chatId in payload  
+    ```
+        {
+            "chat_id": "02887379-7b6f-49fb-94e7-cb8df1e21555",
+            "message": "Holaaaa nrs1666666"
+        }
+    ```
+
+    if recipient username is sent, it means this is a one to one message.
+    I check db to see if a chat exists between these 2.
+        if a chat exists: I insert the message and link it to the chat
+        if a chat does not exist: I create the chat and link the message to it
+
+    if a chatid is sent, I just insert the message and link it to chat id (so chatid  works for group and one to one messaging)
+
+- to view messages, the client needs to get the chats first using ```get /chat```,(I get user chat_id from redis to avoid filtering on db) and the retrieve the messages of that chat using   ```get /chat/{chatId}/message```
