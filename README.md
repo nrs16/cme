@@ -14,14 +14,14 @@
 ## Deployment
 ### Docker compose
 
-- clone the **master** branch
-- go to project directory
+- clone the **main** branch (to access the docker-compose.yml file), if you don't want to clone the project you can just download the docker-compose.yml file from github
+- go to project directory / if you only downloaded the docker-compose.yml file go to the directory that contains the file
 - run ```docker-compose up``` Note that this will take a couple of minutes to pull the images, if you have connectivity issues, open the docker-compose file and pull each individually the run ```docker-compose up``` again
 
 ### system run
 
 if you want to run project locally ,you also need to have cassandra and redis running:
-- clone the **master** branch
+- clone the **main** branch
 - change config hosts for redis and cassandra to "localhost"
 - make
 - ./main
